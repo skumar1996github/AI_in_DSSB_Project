@@ -1,0 +1,948 @@
+{
+  "name": "AI Study Buddy - Create Quiz (Text)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "AI Study Buddy",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "data",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf"
+            },
+            {
+              "fieldLabel": "Choose Difficulty: ",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Beginner"
+                  },
+                  {
+                    "option": "Medium"
+                  },
+                  {
+                    "option": "Advanced"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -688,
+        320
+      ],
+      "id": "13eab9ca-0c2d-48d6-87ae-6cd32f93404f",
+      "name": "On form submission",
+      "webhookId": "8c93f218-3396-423e-9912-5c0f1dfd6b3f"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        320
+      ],
+      "id": "fcbafd0d-ffbb-4dba-a019-7b89375c874c",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a quiz generator. \nBased on the following content, and difficulty level, create a 5-question multiple choice quiz. \nEach question should have 4 options (A, B, C, D) and clearly state the correct answer. Classify the question into a broad general topic, only asking questions from 4 different topics at a time. The answer should be a random option amongst the four options, not just option A every time. \n\nContent:\n{{ $json.text }}\n\nDifficulty level: \n{{ $('On form submission').item.json['Choose Difficulty: '] }}\n\nReturn the result strictly as valid JSON in this structure:\n\n{\n  \"questions\": [\n    {\n      \"id\": number,\n      \"topic\": \"string\",\n      \"question\": \"string\",\n      \"options\": { \"A\": \"string\", \"B\": \"string\", \"C\": \"string\", \"D\": \"string\" },\n      \"correct_answer\": \"string\"\n    }\n  ]\n}\n\nDo not enclose the JSON in quotes or escape characters. Output only raw JSON, nothing else. Return only the raw JSON object as specified above, with no additional text, explanation, or formatting. Do not return an array or any other structure.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -256,
+        320
+      ],
+      "id": "ced25ae7-3ad3-4a7f-9eba-bc4bb0a9612e",
+      "name": "AI Agent",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "model": "x-ai/grok-4.1-fast:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        576
+      ],
+      "id": "c2ba6a1a-165b-4bb7-9a8c-af9eb3f83681",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "s8rXG9Z72RG3v8MU",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json.Email }}",
+        "subject": "Your Quiz is Ready!",
+        "emailType": "text",
+        "message": "=Question 1: {{ $json.output.questions[0].question }}\n\nA) {{ $json.output.questions[0].options.A }}\nB) {{ $json.output.questions[0].options.B }}\nC) {{ $json.output.questions[0].options.C }}\nD) {{ $json.output.questions[0].options.D }}\n\nQuestion 2: {{ $json.output.questions[1].question }}\n\nA) {{ $json.output.questions[1].options.A }}\nB) {{ $json.output.questions[1].options.B }}\nC) {{ $json.output.questions[1].options.C }}\nD) {{ $json.output.questions[1].options.D }}\n\nQuestion 3: {{ $json.output.questions[2].question }}\n\nA) {{ $json.output.questions[2].options.A }}\nB) {{ $json.output.questions[2].options.B }}\nC) {{ $json.output.questions[2].options.C }}\nD) {{ $json.output.questions[2].options.D }}\n\nQuestion 4: {{ $json.output.questions[3].question }}\n\nA) {{ $json.output.questions[3].options.A }}\nB) {{ $json.output.questions[3].options.B }}\nC) {{ $json.output.questions[3].options.C }}\nD) {{ $json.output.questions[3].options.D }}\n\nQuestion 5: {{ $json.output.questions[4].question }}\n\nA) {{ $json.output.questions[4].options.A }}\nB) {{ $json.output.questions[4].options.B }}\nC) {{ $json.output.questions[4].options.C }}\nD) {{ $json.output.questions[4].options.D }}\n\nAnswer Sheet:\nSolution 1: {{ $json.output.questions[0].correct_answer }}\nSolution 2: {{ $json.output.questions[1].correct_answer }}\nSolution 3: {{ $json.output.questions[2].correct_answer }}\nSolution 4: {{ $json.output.questions[3].correct_answer }}\nSolution 5: {{ $json.output.questions[4].correct_answer }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        96,
+        320
+      ],
+      "id": "4f7e700a-94ab-4cd5-b3e3-2a42174f00e0",
+      "name": "Send a message",
+      "webhookId": "b257f5bf-22b0-4a26-9d65-89a1834e32b5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "DMjGjN7biyFC3aPs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('On form submission').item.json.submittedAt }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -224,
+        576
+      ],
+      "id": "e65471fd-4a46-4a72-ace1-b641bdcfc31f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Question1",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "A"
+                  },
+                  {
+                    "option": "B"
+                  },
+                  {
+                    "option": "C"
+                  },
+                  {
+                    "option": "D"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Question2",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "A"
+                  },
+                  {
+                    "option": "B"
+                  },
+                  {
+                    "option": "C"
+                  },
+                  {
+                    "option": "D"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Question3",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "A"
+                  },
+                  {
+                    "option": "B"
+                  },
+                  {
+                    "option": "C"
+                  },
+                  {
+                    "option": "D"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Question4",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "A"
+                  },
+                  {
+                    "option": "B"
+                  },
+                  {
+                    "option": "C"
+                  },
+                  {
+                    "option": "D"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Question5",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "A"
+                  },
+                  {
+                    "option": "B"
+                  },
+                  {
+                    "option": "C"
+                  },
+                  {
+                    "option": "D"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        304,
+        320
+      ],
+      "id": "0c64d494-dc35-4326-ac70-4cc3f4a699c0",
+      "name": "Form",
+      "webhookId": "1325a440-fb6a-4577-978a-7b328f8214a5"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "p4f3x9x4MZCdfAjg",
+          "mode": "list",
+          "cachedResultName": "Quizzes",
+          "cachedResultUrl": "/projects/ww6XKsDUGDVWXvAN/datatables/p4f3x9x4MZCdfAjg"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "correct",
+              "condition": "isFalse"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1552,
+        320
+      ],
+      "id": "625e42ef-b75e-4d2a-81ae-5f4f932d1bb8",
+      "name": "Get row(s)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Feedback for your Quiz Performance",
+        "completionMessage": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        2208,
+        320
+      ],
+      "id": "5b937849-6341-410d-9f7d-4c5b6d5bc384",
+      "name": "Form1",
+      "webhookId": "f112bdf1-6775-4fc7-baa4-b319dec74a96"
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-nano-9b-v2:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1904,
+        528
+      ],
+      "id": "3826b76b-bd96-4ed8-9506-f193bf4d3340",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "s8rXG9Z72RG3v8MU",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=These are the list of questions I got wrong: {{ $json.questionString }}.\nBased on these questions, give me feedback on which topics I should focus on and why. and then construct me a study plan + notes to help me study for the questions I got wrong. Make the output text atleast 400 words and output the text iin a organized and pretty matter with clearly marked sections and newlines to keep things spaced out. Add a newline after every section.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1904,
+        320
+      ],
+      "id": "b4807166-a3f0-4f66-a7de-cf1542d5195c",
+      "name": "AI Agent1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst questionString = items.map((item) => item?.json?.Question).join(\" \");\nreturn [{ json: { questionString } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        320
+      ],
+      "id": "387f8f6f-3b85-4408-a4de-bab9eb2e4e4d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"questions\": [\n    {\n      \"id\": 1,\n      \"topic\": \"string\",\n      \"question\": \"string\",\n      \"options\": { \"A\": \"string\", \"B\": \"string\", \"C\": \"string\", \"D\": \"string\" },\n      \"correct_answer\": \"string\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        576
+      ],
+      "id": "db8dcc63-bf17-4049-85b2-2f4ab2bfd8e9",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "=Question1: {{ $('Insert Row 1').item.json.correct ? \"correct\" : \"wrong!\" }}"
+            },
+            {
+              "fieldLabel": "=Question2: {{ $('Insert Row 2').item.json.correct ? \"correct\" : \"wrong!\" }}"
+            },
+            {
+              "fieldLabel": "=Question3: {{ $('Insert Row 3').item.json.correct ? \"correct\" : \"wrong!\" }}"
+            },
+            {
+              "fieldLabel": "=Question4: {{ $('Insert Row 4').item.json.correct ? \"correct\" : \"wrong!\" }}"
+            },
+            {
+              "fieldLabel": "=Question5: {{ $('Insert Row 5').item.json.correct ? \"correct\" : \"wrong!\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        1296,
+        320
+      ],
+      "id": "2c8f65a8-b6b4-4dd0-afbc-d67eae1bec97",
+      "name": "Form2",
+      "webhookId": "1325a440-fb6a-4577-978a-7b328f8214a5"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "p4f3x9x4MZCdfAjg",
+          "mode": "list",
+          "cachedResultName": "Quizzes",
+          "cachedResultUrl": "/projects/ww6XKsDUGDVWXvAN/datatables/p4f3x9x4MZCdfAjg"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "correct": "={{ $('Form').item.json.Question1 == $('AI Agent').item.json.output.questions[0].correct_answer }}",
+            "Question": "={{ $('AI Agent').item.json.output.questions[0].question }}",
+            "Topic": "={{ $('AI Agent').item.json.output.questions[0].topic }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Question",
+              "displayName": "Question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "correct",
+              "displayName": "correct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        512,
+        320
+      ],
+      "id": "7a7c5cba-0fcd-4a3b-89b0-c41a1c73830c",
+      "name": "Insert Row 1"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "p4f3x9x4MZCdfAjg",
+          "mode": "list",
+          "cachedResultName": "Quizzes",
+          "cachedResultUrl": "/projects/ww6XKsDUGDVWXvAN/datatables/p4f3x9x4MZCdfAjg"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "correct": "={{ $('Form').item.json.Question2 == $('AI Agent').item.json.output.questions[1].correct_answer }}",
+            "Question": "={{ $('AI Agent').item.json.output.questions[1].question }}",
+            "Topic": "={{ $('AI Agent').item.json.output.questions[1].topic }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Question",
+              "displayName": "Question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "correct",
+              "displayName": "correct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        640,
+        320
+      ],
+      "id": "93cec62e-23b7-4f8a-8539-71ca183094f6",
+      "name": "Insert Row 2"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "p4f3x9x4MZCdfAjg",
+          "mode": "list",
+          "cachedResultName": "Quizzes",
+          "cachedResultUrl": "/projects/ww6XKsDUGDVWXvAN/datatables/p4f3x9x4MZCdfAjg"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Question": "={{ $('AI Agent').item.json.output.questions[2].question }}",
+            "Topic": "={{ $('AI Agent').item.json.output.questions[2].topic }}",
+            "correct": "={{ $('Form').item.json.Question3 == $('AI Agent').item.json.output.questions[2].correct_answer }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Question",
+              "displayName": "Question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "correct",
+              "displayName": "correct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        768,
+        320
+      ],
+      "id": "b98ae92f-b1ce-4768-ad28-74b3119d3900",
+      "name": "Insert Row 3"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "p4f3x9x4MZCdfAjg",
+          "mode": "list",
+          "cachedResultName": "Quizzes",
+          "cachedResultUrl": "/projects/ww6XKsDUGDVWXvAN/datatables/p4f3x9x4MZCdfAjg"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Question": "={{ $('AI Agent').item.json.output.questions[3].question }}",
+            "Topic": "={{ $('AI Agent').item.json.output.questions[3].topic }}",
+            "correct": "={{ $('Form').item.json.Question4 == $('AI Agent').item.json.output.questions[3].correct_answer }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Question",
+              "displayName": "Question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "correct",
+              "displayName": "correct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        896,
+        320
+      ],
+      "id": "fbe33e47-de6a-4aa1-83db-d52b6313bab2",
+      "name": "Insert Row 4"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "p4f3x9x4MZCdfAjg",
+          "mode": "list",
+          "cachedResultName": "Quizzes",
+          "cachedResultUrl": "/projects/ww6XKsDUGDVWXvAN/datatables/p4f3x9x4MZCdfAjg"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Question": "={{ $('AI Agent').item.json.output.questions[4].question }}",
+            "Topic": "={{ $('AI Agent').item.json.output.questions[4].topic }}",
+            "correct": "={{ $('Form').item.json.Question5 == $('AI Agent').item.json.output.questions[4].correct_answer }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Question",
+              "displayName": "Question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "correct",
+              "displayName": "correct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        320
+      ],
+      "id": "00227114-1e96-4994-ad97-cc7b5e690b22",
+      "name": "Insert Row 5"
+    },
+    {
+      "parameters": {
+        "content": "Example Response to Email: \n\nQuestion 1: In the context of data security, what is the primary guarantee provided by data confidentiality?\n\nA) Ensuring prompt access to information\nB) Preventing unauthorized access or disclosure of private information\nC) Linking actions uniquely to an entity\nD) Verifying the authenticity of a message originator\n\nQuestion 2: Which security objective ensures that a system operates as planned, free from unauthorized modifications?\n\nA) Confidentiality\nB) Integrity (System integrity)\nC) Availability\nD) Authenticity\n\nQuestion 3: According to OSI Security Architecture, what is a security mechanism designed to do?\n\nA) Compromise the security of data\nB) Detect, prevent, and recover from security breaches\nC) Exploit vulnerabilities in a system\nD) Provide processing services without security enhancement\n\nQuestion 4: What distinguishes a threat from an attack in cybersecurity?\n\nA) A threat is an actual exploitation, while an attack is a potential danger\nB) A threat is a potential danger or risk, while an attack is an actual exploitation of a vulnerability\nC) Both are always intentional cyber activities\nD) Threats are unintentional, attacks are always natural disasters\n\nQuestion 5: Which of the following is an example of an active attack where an attacker retransmits a captured data unit to produce an unauthorized effect?\n\nA) Traffic analysis\nB) Release of message content\nC) Replay attack\nD) Eavesdropping\n\nAnswer Sheet:\nSolution 1: B\nSolution 2: B\nSolution 3: B\nSolution 4: B\nSolution 5: C",
+        "height": 304,
+        "width": 288
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "0755459f-d0a0-46d3-8064-40d659c35003",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form": {
+      "main": [
+        [
+          {
+            "node": "Insert Row 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Form1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Row 1": {
+      "main": [
+        [
+          {
+            "node": "Insert Row 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Row 2": {
+      "main": [
+        [
+          {
+            "node": "Insert Row 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Row 3": {
+      "main": [
+        [
+          {
+            "node": "Insert Row 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Row 4": {
+      "main": [
+        [
+          {
+            "node": "Insert Row 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Row 5": {
+      "main": [
+        [
+          {
+            "node": "Form2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form2": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4174678f-0a1e-4166-8425-2e7c20323d3a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d692ca8cc223e6c77543d0c6419eb5b3c35521052caccf76b3d5d7380994cd82"
+  },
+  "id": "UiQR2oWZhh6Hdg6z",
+  "tags": []
+}
